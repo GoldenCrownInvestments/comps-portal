@@ -25,6 +25,96 @@ function sourceSearchUrl(source, address) {
   return `https://www.redfin.com/homes-for-sale#!search_location=${encoded}`;
 }
 
+function propertyAddress(property) {
+  return [property.street_address, property.city, property.state, property.zipcode].filter(Boolean).join(", ");
+}
+
+function normalizeStatus(status) {
+  if (!status) return "Unknown";
+  return String(status).replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function normalizeApillowResult(result, index) {
+  const property = result.property || result;
+  const address = propertyAddress(property) || result.url || `Zillow comp ${index + 1}`;
+
+  return {
+    id: `zillow-${property.zpid || index + 1}`,
+    source: "Zillow",
+    address,
+    status: normalizeStatus(property.home_status),
+    price: property.price || property.zestimate || property.last_sold_price || null,
+    beds: property.bedrooms ?? null,
+    baths: property.bathrooms ?? null,
+    sqft: property.living_area ?? null,
+    distanceMiles: property.distance_miles ?? null,
+    zillowSaves: property.favorite_count ?? null,
+    zillowViews: property.page_view_count ?? null,
+    redfinLikes: null,
+    url: result.url || property.url || sourceSearchUrl("Zillow", address),
+  };
+}
+
+async function pollApillowJob(jobId, apiKey) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const response = await fetch(`https://api.apillow.co/v1/results/${jobId}`, {
+      headers: { "X-API-Key": apiKey },
+    });
+
+    if (!response.ok) {
+      throw new Error(`APIllow results returned ${response.status}`);
+    }
+
+    const payload = await response.json();
+    if (payload.status === "complete") return payload;
+    if (payload.status === "failed") throw new Error("APIllow job failed.");
+    await new Promise((resolve) => setTimeout(resolve, 3500));
+  }
+
+  throw new Error("APIllow job timed out.");
+}
+
+async function apillowProvider(address) {
+  const apiKey = process.env.APILLOW_API_KEY;
+  if (!apiKey) return null;
+
+  const response = await fetch("https://api.apillow.co/v1/properties", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "X-API-Key": apiKey,
+    },
+    body: JSON.stringify({
+      search: address,
+      type: "sale",
+      max_items: Number(process.env.APILLOW_MAX_ITEMS || 8),
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`APIllow returned ${response.status}`);
+  }
+
+  const submitted = await response.json();
+  const payload = submitted.status === "complete" ? submitted : await pollApillowJob(submitted.job_id, apiKey);
+  const comps = (payload.results || []).filter((result) => result.success !== false).map(normalizeApillowResult);
+  const subjectProperty = comps[0] || {};
+
+  return {
+    address,
+    mode: "live",
+    generatedAt: new Date().toISOString(),
+    note: "Live Zillow data connected through APIllow. Redfin likes require a separate Redfin-capable provider.",
+    subject: {
+      beds: subjectProperty.beds ?? null,
+      baths: subjectProperty.baths ?? null,
+      sqft: subjectProperty.sqft ?? null,
+      estimatedValue: subjectProperty.price ?? null,
+    },
+    comps,
+  };
+}
+
 function demoComps(address) {
   const seed = hash(address);
   const basePrice = 325000 + (seed % 380000);
@@ -92,6 +182,9 @@ async function liveProvider(address) {
 }
 
 export async function findComps(address) {
+  const apillow = await apillowProvider(address);
+  if (apillow) return apillow;
+
   const live = await liveProvider(address);
   if (live) return { ...live, mode: live.mode || "live" };
   return demoComps(address);

@@ -16,7 +16,14 @@ const contentTypes = {
   ".svg": "image/svg+xml",
 };
 
+function writeCorsHeaders(res) {
+  res.setHeader("access-control-allow-origin", process.env.ALLOWED_ORIGIN || "*");
+  res.setHeader("access-control-allow-methods", "GET,OPTIONS");
+  res.setHeader("access-control-allow-headers", "content-type,authorization");
+}
+
 async function sendJson(res, status, payload) {
+  writeCorsHeaders(res);
   res.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   res.end(JSON.stringify(payload));
 }
@@ -46,6 +53,13 @@ async function serveStatic(req, res) {
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
+
+  if (req.method === "OPTIONS") {
+    writeCorsHeaders(res);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
 
   if (url.pathname === "/health") {
     await sendJson(res, 200, { ok: true, service: "comps-portal" });

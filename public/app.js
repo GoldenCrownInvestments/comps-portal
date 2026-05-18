@@ -5,6 +5,7 @@ const summary = document.querySelector("#summary");
 const subject = document.querySelector("#subject");
 const modePill = document.querySelector("#mode-pill");
 const notice = document.querySelector("#notice");
+const apiBaseUrl = window.COMPS_API_BASE_URL || "";
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -95,9 +96,9 @@ function renderSubject(data) {
   subject.classList.remove("muted-state");
   subject.innerHTML = [
     metric("Address", data.address),
-    metric("Estimated value", money.format(data.subject.estimatedValue)),
-    metric("Beds / Baths", `${data.subject.beds} / ${data.subject.baths}`),
-    metric("Square feet", number.format(data.subject.sqft)),
+    metric("Estimated value", data.subject.estimatedValue == null ? "N/A" : money.format(data.subject.estimatedValue)),
+    metric("Beds / Baths", `${data.subject.beds ?? "N/A"} / ${data.subject.baths ?? "N/A"}`),
+    metric("Square feet", data.subject.sqft == null ? "N/A" : number.format(data.subject.sqft)),
   ].join("");
 }
 
@@ -119,11 +120,11 @@ function renderResults(data) {
           <div>
             <h3 class="comp-title">${comp.address}</h3>
             <div class="comp-meta">
-              <span>${money.format(comp.price)}</span>
-              <span>${comp.beds} bd</span>
-              <span>${comp.baths} ba</span>
-              <span>${number.format(comp.sqft)} sqft</span>
-              <span>${comp.distanceMiles} mi</span>
+              <span>${comp.price == null ? "N/A" : money.format(comp.price)}</span>
+              <span>${comp.beds ?? "N/A"} bd</span>
+              <span>${comp.baths ?? "N/A"} ba</span>
+              <span>${comp.sqft == null ? "N/A" : number.format(comp.sqft)} sqft</span>
+              <span>${comp.distanceMiles == null ? "N/A" : `${comp.distanceMiles} mi`}</span>
               <span>${comp.status}</span>
             </div>
             <div class="source-row">
@@ -154,7 +155,8 @@ form.addEventListener("submit", async (event) => {
   results.textContent = "Searching comps...";
 
   try {
-    const apiUrl = new URL(`api/comps?address=${encodeURIComponent(address)}`, window.location.href);
+    const apiRoot = apiBaseUrl || window.location.href;
+    const apiUrl = new URL(`api/comps?address=${encodeURIComponent(address)}`, apiRoot);
     const response = await fetch(apiUrl);
     const contentType = response.headers.get("content-type") || "";
     const data = response.ok && contentType.includes("application/json") ? await response.json() : demoComps(address);

@@ -30,15 +30,36 @@ Use the included `Dockerfile`, or configure:
 - Health check path: `/health`
 - Port: use the host-provided `PORT` environment variable
 
-## Live Data Hook
+## APIllow Zillow Data
 
-The portal runs in demo mode by default because Zillow and Redfin engagement metrics are not exposed through a stable public API. To connect a licensed/internal data source, set:
+For the lowest-cost Zillow-first integration, set an APIllow key on the hosted backend:
+
+```powershell
+$env:APILLOW_API_KEY="your_api_key"
+$env:APILLOW_MAX_ITEMS="8"
+node server.js
+```
+
+APIllow can return Zillow `favorite_count` and `page_view_count`, which the portal maps to Zillow saves/views where present. Redfin likes require a separate Redfin-capable provider.
+
+## Generic Live Data Hook
+
+The portal also supports a custom provider endpoint:
 
 ```powershell
 $env:COMPS_PROVIDER_URL="https://your-provider.example.com/comps"
 $env:COMPS_PROVIDER_TOKEN="optional-token"
 node server.js
 ```
+
+## GitHub Pages + Hosted Backend
+
+GitHub Pages can only serve static files. To use live data:
+
+1. Deploy this app to Render/Railway with `APILLOW_API_KEY` set.
+2. Copy `public/config.example.js` to `public/config.js`.
+3. Set `window.COMPS_API_BASE_URL` to the hosted backend URL.
+4. Commit and push `public/config.js`.
 
 The provider should accept:
 
