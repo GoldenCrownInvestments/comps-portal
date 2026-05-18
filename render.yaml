@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: comps-saves-likes-portal
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: COMPS_PROVIDER_URL
+        sync: false
+      - key: COMPS_PROVIDER_TOKEN
+        sync: false
