@@ -1,15 +1,19 @@
 :root {
-  color-scheme: light;
-  --ink: #18201b;
-  --muted: #667066;
-  --line: #d9dfd7;
-  --paper: #f7f8f3;
-  --panel: #ffffff;
-  --sage: #dfe8d8;
-  --green: #256a43;
-  --blue: #22577a;
-  --red: #a94442;
-  --gold: #c08b2c;
+  color-scheme: dark;
+  --black: #0b0b0b;
+  --dark: #171719;
+  --dark-2: #202023;
+  --panel: #29292d;
+  --panel-2: #313136;
+  --line: #453d28;
+  --line-soft: #3a3a3f;
+  --cream: #f8f5e6;
+  --muted: #d8d1bd;
+  --gold: #c9a227;
+  --gold-bright: #e6c65a;
+  --blue: #5b9bd5;
+  --green: #70ad47;
+  --red: #c0504d;
 }
 
 * {
@@ -19,8 +23,10 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--paper);
-  color: var(--ink);
+  background:
+    linear-gradient(180deg, rgba(201, 162, 39, 0.08), rgba(11, 11, 11, 0) 260px),
+    var(--black);
+  color: var(--cream);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -36,15 +42,15 @@ body {
   gap: 24px;
   align-items: end;
   padding: 24px;
-  background: var(--panel);
+  background: linear-gradient(135deg, #111112, #1d1d20);
   border: 1px solid var(--line);
   border-radius: 8px;
-  box-shadow: 0 18px 45px rgba(38, 47, 40, 0.08);
+  box-shadow: 0 22px 56px rgba(0, 0, 0, 0.38);
 }
 
 .eyebrow {
   margin: 0 0 8px;
-  color: var(--green);
+  color: var(--gold-bright);
   font-size: 0.76rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -62,6 +68,7 @@ h1 {
   font-size: clamp(2rem, 5vw, 4rem);
   line-height: 0.95;
   letter-spacing: 0;
+  color: var(--gold-bright);
 }
 
 h2 {
@@ -80,7 +87,7 @@ h2 {
 .search-form label {
   display: block;
   margin-bottom: 8px;
-  color: var(--muted);
+  color: var(--gold-bright);
   font-size: 0.9rem;
   font-weight: 700;
 }
@@ -100,16 +107,26 @@ button {
 
 input {
   width: 100%;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(91, 155, 213, 0.55);
   padding: 0 14px;
-  background: #fbfcf8;
-  color: var(--ink);
+  background: #242428;
+  color: var(--cream);
+}
+
+input::placeholder {
+  color: #918b7a;
+}
+
+input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(91, 155, 213, 0.22);
+  outline: none;
 }
 
 button {
   border: 0;
-  background: var(--green);
-  color: white;
+  background: var(--gold);
+  color: var(--black);
   font-weight: 800;
   cursor: pointer;
 }
@@ -130,10 +147,10 @@ button:disabled {
 .notice {
   margin-bottom: 18px;
   padding: 12px 14px;
-  border: 1px solid #ead8b6;
+  border: 1px solid rgba(201, 162, 39, 0.55);
   border-radius: 8px;
-  background: #fff8eb;
-  color: #6c5224;
+  background: rgba(201, 162, 39, 0.1);
+  color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -148,6 +165,7 @@ button:disabled {
 
 .summary-card {
   padding: 14px 16px;
+  border-top: 4px solid var(--gold);
 }
 
 .summary-card span,
@@ -163,6 +181,7 @@ button:disabled {
   display: block;
   margin-top: 4px;
   font-size: 1.1rem;
+  color: var(--cream);
 }
 
 .results-layout {
@@ -183,7 +202,7 @@ button:disabled {
 
 .metric {
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .results-head {
@@ -199,8 +218,8 @@ button:disabled {
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  background: var(--sage);
-  color: var(--green);
+  background: rgba(201, 162, 39, 0.16);
+  color: var(--gold-bright);
   font-size: 0.76rem;
   font-weight: 800;
 }
@@ -215,14 +234,19 @@ button:disabled {
   grid-template-columns: 1fr auto;
   gap: 18px;
   padding: 16px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
-  background: #fbfcf8;
+  background: var(--dark-2);
+}
+
+.comp-card:hover {
+  border-color: rgba(201, 162, 39, 0.65);
 }
 
 .comp-title {
   margin: 0 0 8px;
   font-size: 1rem;
+  color: var(--cream);
 }
 
 .comp-meta,
@@ -244,7 +268,7 @@ button:disabled {
 }
 
 .source-redfin {
-  color: var(--red);
+  color: #ff7c78;
   font-weight: 800;
 }
 
@@ -258,7 +282,8 @@ button:disabled {
 .engagement div {
   padding: 10px;
   border-radius: 6px;
-  background: #eef3ea;
+  background: #1b1b1e;
+  border: 1px solid var(--line-soft);
 }
 
 .engagement span {
@@ -274,7 +299,7 @@ button:disabled {
 }
 
 a {
-  color: var(--green);
+  color: var(--gold-bright);
   font-weight: 800;
   text-decoration: none;
 }
