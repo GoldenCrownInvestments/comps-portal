@@ -25,6 +25,27 @@ function sourceSearchUrl(source, address) {
   return `https://www.redfin.com/homes-for-sale#!search_location=${encoded}`;
 }
 
+function slugForUrl(value) {
+  return String(value || "")
+    .trim()
+    .replace(/#/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function zillowDetailsUrl(property, resultUrl) {
+  if (resultUrl && resultUrl.includes("/homedetails/")) return resultUrl;
+  if (!property?.zpid) return resultUrl || null;
+
+  const slug = slugForUrl(
+    [property.street_address, property.city, property.state, property.zipcode]
+      .filter(Boolean)
+      .join(" ")
+  );
+
+  return `https://www.zillow.com/homedetails/${slug}/${property.zpid}_zpid/`;
+}
+
 function normalizeText(value) {
   return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
 }
@@ -64,6 +85,7 @@ function normalizeStatus(status) {
 function normalizeApillowResult(result, index) {
   const property = result.property || result;
   const address = propertyAddress(property) || result.url || `Zillow comp ${index + 1}`;
+  const exactUrl = zillowDetailsUrl(property, result.url || property.url);
 
   return {
     id: `zillow-${property.zpid || index + 1}`,
@@ -78,7 +100,7 @@ function normalizeApillowResult(result, index) {
     zillowSaves: property.favorite_count ?? null,
     zillowViews: property.page_view_count ?? null,
     redfinLikes: null,
-    url: result.url || property.url || sourceSearchUrl("Zillow", address),
+    url: exactUrl || sourceSearchUrl("Zillow", address),
   };
 }
 

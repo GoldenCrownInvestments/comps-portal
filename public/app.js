@@ -129,7 +129,7 @@ function renderResults(data) {
             </div>
             <div class="source-row">
               <span class="${sourceClass}">${comp.source}</span>
-              <a href="${comp.url}" target="_blank" rel="noreferrer">Open source search</a>
+              <a href="${comp.url}" target="_blank" rel="noreferrer">Open exact listing</a>
             </div>
           </div>
           <div class="engagement" aria-label="Engagement metrics">
