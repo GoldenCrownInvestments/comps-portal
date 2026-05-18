@@ -5,7 +5,7 @@ const summary = document.querySelector("#summary");
 const subject = document.querySelector("#subject");
 const modePill = document.querySelector("#mode-pill");
 const notice = document.querySelector("#notice");
-const apiBaseUrl = window.COMPS_API_BASE_URL || "";
+const apiBaseUrl = window.COMPS_API_BASE_URL || "https://comps-portal.onrender.com/";
 
 const money = new Intl.NumberFormat("en-US", {
   style: "currency",
