@@ -66,7 +66,7 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  if (url.pathname === "/api/comps") {
+  if (url.pathname === "/api/comps" || url.pathname === "/comps") {
     const address = url.searchParams.get("address")?.trim();
     if (!address) {
       await sendJson(res, 400, { error: "Enter an address to search comps." });

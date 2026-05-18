@@ -156,7 +156,7 @@ form.addEventListener("submit", async (event) => {
 
   try {
     const apiRoot = apiBaseUrl || window.location.href;
-    const apiUrl = new URL(`api/comps?address=${encodeURIComponent(address)}`, apiRoot);
+    const apiUrl = new URL(`comps?address=${encodeURIComponent(address)}`, apiRoot);
     const response = await fetch(apiUrl);
     const contentType = response.headers.get("content-type") || "";
     const data = response.ok && contentType.includes("application/json") ? await response.json() : demoComps(address);
