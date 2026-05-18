@@ -13,6 +13,60 @@ const money = new Intl.NumberFormat("en-US", {
 });
 
 const number = new Intl.NumberFormat("en-US");
+const sampleStreets = ["Maple Ave", "Cedar Street", "Oak Ridge Drive", "Sunset Boulevard", "Pine Hollow Lane", "Riverside Way"];
+
+function hash(input) {
+  let value = 0;
+  for (let i = 0; i < input.length; i += 1) {
+    value = (value * 31 + input.charCodeAt(i)) >>> 0;
+  }
+  return value;
+}
+
+function roundedMoney(value) {
+  return Math.round(value / 1000) * 1000;
+}
+
+function sourceSearchUrl(source, address) {
+  const encoded = encodeURIComponent(address);
+  if (source === "Zillow") return `https://www.zillow.com/homes/${encoded}_rb/`;
+  return `https://www.redfin.com/homes-for-sale#!search_location=${encoded}`;
+}
+
+function demoComps(address) {
+  const seed = hash(address);
+  const basePrice = 325000 + (seed % 380000);
+  const beds = 2 + (seed % 4);
+  const baths = 1 + ((seed >>> 3) % 3);
+  const sqft = 1050 + (seed % 1400);
+  const comps = sampleStreets.map((street, index) => {
+    const source = index % 2 === 0 ? "Zillow" : "Redfin";
+    const shifted = seed >>> index;
+    const compAddress = `${100 + (shifted % 880)} ${street}`;
+    return {
+      id: `${source.toLowerCase()}-${index + 1}`,
+      source,
+      address: compAddress,
+      status: index < 4 ? "Active" : "Sold",
+      price: roundedMoney(basePrice + (index - 2) * 18500 + (shifted % 17000)),
+      beds: Math.max(1, beds + (index % 3) - 1),
+      baths: Math.max(1, baths + (index % 2)),
+      sqft: sqft + (index - 3) * 85,
+      distanceMiles: Number((0.2 + index * 0.17).toFixed(2)),
+      zillowSaves: source === "Zillow" ? 18 + ((seed >>> (index + 2)) % 280) : null,
+      redfinLikes: source === "Redfin" ? 9 + ((seed >>> (index + 1)) % 190) : null,
+      url: sourceSearchUrl(source, compAddress),
+    };
+  });
+
+  return {
+    address,
+    mode: "demo",
+    note: "Static demo mode is active. Connect the hosted API provider for live Zillow saves and Redfin likes.",
+    subject: { beds, baths, sqft, estimatedValue: roundedMoney(basePrice) },
+    comps,
+  };
+}
 
 function metric(label, value) {
   return `<div class="metric"><span>${label}</span><strong>${value}</strong></div>`;
@@ -100,9 +154,10 @@ form.addEventListener("submit", async (event) => {
   results.textContent = "Searching comps...";
 
   try {
-    const response = await fetch(`/api/comps?address=${encodeURIComponent(address)}`);
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "Search failed.");
+    const apiUrl = new URL(`api/comps?address=${encodeURIComponent(address)}`, window.location.href);
+    const response = await fetch(apiUrl);
+    const contentType = response.headers.get("content-type") || "";
+    const data = response.ok && contentType.includes("application/json") ? await response.json() : demoComps(address);
     renderSummary(data);
     renderSubject(data);
     renderResults(data);
