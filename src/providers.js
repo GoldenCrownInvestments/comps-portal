@@ -25,6 +25,33 @@ function sourceSearchUrl(source, address) {
   return `https://www.redfin.com/homes-for-sale#!search_location=${encoded}`;
 }
 
+function normalizeText(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function subjectStreet(address) {
+  return String(address || "").split(",")[0]?.trim() || "";
+}
+
+function marketSearchFromAddress(address) {
+  const parts = String(address || "").split(",").map((part) => part.trim()).filter(Boolean);
+  const zip = String(address || "").match(/\b\d{5}(?:-\d{4})?\b/)?.[0]?.slice(0, 5);
+
+  if (zip) {
+    return { zipcodes: [Number(zip)] };
+  }
+
+  if (parts.length >= 3) {
+    return { search: `${parts[1]}, ${parts[2]}` };
+  }
+
+  if (parts.length === 2) {
+    return { search: parts[1] };
+  }
+
+  return { search: address };
+}
+
 function propertyAddress(property) {
   return [property.street_address, property.city, property.state, property.zipcode].filter(Boolean).join(", ");
 }
@@ -77,6 +104,8 @@ async function pollApillowJob(jobId, apiKey) {
 async function apillowProvider(address) {
   const apiKey = process.env.APILLOW_API_KEY;
   if (!apiKey) return null;
+  const searchInput = marketSearchFromAddress(address);
+  const subjectStreetKey = normalizeText(subjectStreet(address));
 
   const response = await fetch("https://api.apillow.co/v1/properties", {
     method: "POST",
@@ -85,9 +114,9 @@ async function apillowProvider(address) {
       "X-API-Key": apiKey,
     },
     body: JSON.stringify({
-      search: address,
+      ...searchInput,
       type: "sale",
-      max_items: Number(process.env.APILLOW_MAX_ITEMS || 8),
+      max_items: Number(process.env.APILLOW_MAX_ITEMS || 12),
     }),
   });
 
@@ -97,19 +126,22 @@ async function apillowProvider(address) {
 
   const submitted = await response.json();
   const payload = submitted.status === "complete" ? submitted : await pollApillowJob(submitted.job_id, apiKey);
-  const comps = (payload.results || []).filter((result) => result.success !== false).map(normalizeApillowResult);
-  const subjectProperty = comps[0] || {};
+  const comps = (payload.results || [])
+    .filter((result) => result.success !== false)
+    .map(normalizeApillowResult)
+    .filter((comp) => !subjectStreetKey || !normalizeText(comp.address).startsWith(subjectStreetKey))
+    .slice(0, Number(process.env.VISIBLE_COMP_LIMIT || 8));
 
   return {
     address,
     mode: "live",
     generatedAt: new Date().toISOString(),
-    note: "Live Zillow data connected through APIllow. Redfin likes require a separate Redfin-capable provider.",
+    note: `Live Zillow market search connected through APIllow using ${searchInput.zipcodes ? `ZIP ${searchInput.zipcodes[0]}` : `"${searchInput.search}"`}. Redfin likes require a separate Redfin-capable provider.`,
     subject: {
-      beds: subjectProperty.beds ?? null,
-      baths: subjectProperty.baths ?? null,
-      sqft: subjectProperty.sqft ?? null,
-      estimatedValue: subjectProperty.price ?? null,
+      beds: null,
+      baths: null,
+      sqft: null,
+      estimatedValue: null,
     },
     comps,
   };

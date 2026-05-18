@@ -14,6 +14,8 @@ services:
       - key: APILLOW_API_KEY
         sync: false
       - key: APILLOW_MAX_ITEMS
+        value: "12"
+      - key: VISIBLE_COMP_LIMIT
         value: "8"
       - key: COMPS_PROVIDER_URL
         sync: false
