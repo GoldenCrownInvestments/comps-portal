@@ -82,21 +82,62 @@ function normalizeStatus(status) {
   return String(status).replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function parseDate(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function mostRecentSoldEvent(property) {
+  const directDate =
+    parseDate(property.last_sold_date) ||
+    parseDate(property.date_sold) ||
+    parseDate(property.sold_date) ||
+    parseDate(property.lastSoldDate);
+
+  if (directDate) {
+    return {
+      date: directDate,
+      price: property.last_sold_price || property.price || null,
+    };
+  }
+
+  const soldEvents = (property.price_history || [])
+    .map((event) => ({
+      date: parseDate(event.date || event.time || event.event_date),
+      price: event.price || event.value || property.last_sold_price || property.price || null,
+      event: String(event.event || event.event_name || event.source || "").toLowerCase(),
+    }))
+    .filter((event) => event.date && (!event.event || event.event.includes("sold")));
+
+  soldEvents.sort((a, b) => b.date - a.date);
+  return soldEvents[0] || null;
+}
+
+function dateMonthsAgo(months) {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
 function normalizeApillowResult(result, index) {
   const property = result.property || result;
   const address = propertyAddress(property) || result.url || `Zillow comp ${index + 1}`;
   const exactUrl = zillowDetailsUrl(property, result.url || property.url);
+  const soldEvent = mostRecentSoldEvent(property);
 
   return {
     id: `zillow-${property.zpid || index + 1}`,
     source: "Zillow",
     address,
     status: normalizeStatus(property.home_status),
-    price: property.price || property.zestimate || property.last_sold_price || null,
+    price: soldEvent?.price || property.last_sold_price || property.price || property.zestimate || null,
     beds: property.bedrooms ?? null,
     baths: property.bathrooms ?? null,
     sqft: property.living_area ?? null,
     distanceMiles: property.distance_miles ?? null,
+    lastSoldDate: soldEvent?.date ? soldEvent.date.toISOString().slice(0, 10) : null,
     zillowSaves: property.favorite_count ?? null,
     zillowViews: property.page_view_count ?? null,
     redfinLikes: null,
@@ -128,6 +169,9 @@ async function apillowProvider(address) {
   if (!apiKey) return null;
   const searchInput = marketSearchFromAddress(address);
   const subjectStreetKey = normalizeText(subjectStreet(address));
+  const soldMonths = Number(process.env.SOLD_LOOKBACK_MONTHS || 12);
+  const soldStart = dateMonthsAgo(soldMonths);
+  const now = new Date();
 
   const response = await fetch("https://api.apillow.co/v1/properties", {
     method: "POST",
@@ -137,8 +181,8 @@ async function apillowProvider(address) {
     },
     body: JSON.stringify({
       ...searchInput,
-      type: "sale",
-      max_items: Number(process.env.APILLOW_MAX_ITEMS || 12),
+      type: "sold",
+      max_items: Number(process.env.APILLOW_MAX_ITEMS || 40),
     }),
   });
 
@@ -152,13 +196,18 @@ async function apillowProvider(address) {
     .filter((result) => result.success !== false)
     .map(normalizeApillowResult)
     .filter((comp) => !subjectStreetKey || !normalizeText(comp.address).startsWith(subjectStreetKey))
+    .filter((comp) => {
+      const soldDate = parseDate(comp.lastSoldDate);
+      return soldDate && soldDate >= soldStart && soldDate <= now;
+    })
+    .sort((a, b) => parseDate(b.lastSoldDate) - parseDate(a.lastSoldDate))
     .slice(0, Number(process.env.VISIBLE_COMP_LIMIT || 8));
 
   return {
     address,
     mode: "live",
     generatedAt: new Date().toISOString(),
-    note: `Live Zillow market search connected through APIllow using ${searchInput.zipcodes ? `ZIP ${searchInput.zipcodes[0]}` : `"${searchInput.search}"`}. Redfin likes require a separate Redfin-capable provider.`,
+    note: `Live Zillow sold comps from the last ${soldMonths} months using ${searchInput.zipcodes ? `ZIP ${searchInput.zipcodes[0]}` : `"${searchInput.search}"`}. Redfin likes require a separate Redfin-capable provider.`,
     subject: {
       beds: null,
       baths: null,

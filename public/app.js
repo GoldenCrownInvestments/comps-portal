@@ -14,6 +14,7 @@ const money = new Intl.NumberFormat("en-US", {
 });
 
 const number = new Intl.NumberFormat("en-US");
+const dateFmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
 const sampleStreets = ["Maple Ave", "Cedar Street", "Oak Ridge Drive", "Sunset Boulevard", "Pine Hollow Lane", "Riverside Way"];
 
 function hash(input) {
@@ -106,6 +107,12 @@ function engagementValue(value) {
   return value == null ? "N/A" : number.format(value);
 }
 
+function dateValue(value) {
+  if (!value) return "N/A";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "N/A" : dateFmt.format(date);
+}
+
 function renderResults(data) {
   modePill.textContent = data.mode === "live" ? "Live data" : "Demo data";
   modePill.title = data.note || "";
@@ -125,6 +132,7 @@ function renderResults(data) {
               <span>${comp.baths ?? "N/A"} ba</span>
               <span>${comp.sqft == null ? "N/A" : number.format(comp.sqft)} sqft</span>
               <span>${comp.distanceMiles == null ? "N/A" : `${comp.distanceMiles} mi`}</span>
+              <span>Sold ${dateValue(comp.lastSoldDate)}</span>
               <span>${comp.status}</span>
             </div>
             <div class="source-row">

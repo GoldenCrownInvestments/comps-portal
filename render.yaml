@@ -14,9 +14,11 @@ services:
       - key: APILLOW_API_KEY
         sync: false
       - key: APILLOW_MAX_ITEMS
-        value: "12"
+        value: "40"
       - key: VISIBLE_COMP_LIMIT
         value: "8"
+      - key: SOLD_LOOKBACK_MONTHS
+        value: "12"
       - key: COMPS_PROVIDER_URL
         sync: false
       - key: COMPS_PROVIDER_TOKEN
