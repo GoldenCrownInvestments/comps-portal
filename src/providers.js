@@ -182,11 +182,14 @@ async function apillowProvider(address) {
     body: JSON.stringify({
       ...searchInput,
       type: "sold",
-      max_items: Number(process.env.APILLOW_MAX_ITEMS || 40),
+      max_items: Number(process.env.APILLOW_MAX_ITEMS || 12),
     }),
   });
 
   if (!response.ok) {
+    if (response.status === 429) {
+      throw new Error("APIllow rate limit reached. Please wait a bit and search again, or lower APILLOW_MAX_ITEMS.");
+    }
     throw new Error(`APIllow returned ${response.status}`);
   }
 
